@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | OSIS MTs Darul Hikam Cirebon</title>
+  <meta name="description" content="Admin Dashboard OSIS MTs Darul Hikam Cirebon">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#1a5f2a',
+              light: '#2d7a3e',
+              dark: '#124a1f',
+            },
+            secondary: {
+              DEFAULT: '#d4af37',
+              light: '#e8c547',
+              dark: '#b8960c',
+            },
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Poppins', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/navbar-footer.css">
+  
+  <style>
+    /* Admin Dashboard Styles */
+    .admin-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      z-index: 1000;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+    
+    .admin-sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+    
+    .admin-main {
+      margin-left: 280px;
+      min-height: 100vh;
+      transition: margin-left 0.3s ease;
+    }
+    
+    .admin-main.expanded {
+      margin-left: 0;
+    }
+    
+    .admin-sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .admin-sidebar-nav {
+      padding: 1rem 0;
+    }
+    
+    .admin-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1.5rem;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+    
+    .admin-nav-item:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    
+    .admin-nav-item.active {
+      background: rgba(26, 95, 42, 0.1);
+      color: var(--primary);
+      border-left-color: var(--primary);
+    }
+    
+    [data-theme="dark"] .admin-nav-item.active {
+      background: rgba(74, 222, 128, 0.1);
+    }
+    
+    .admin-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+    }
+    
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+    
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    
+    @media (max-width: 1024px) {
+      .admin-sidebar {
+        transform: translateX(-100%);
+      }
+      
+      .admin-sidebar.open {
+        transform: translateX(0);
+      }
+      
+      .admin-main {
+        margin-left: 0;
+      }
+    }
+    
+    .mobile-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .mobile-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobile-overlay" onclick="toggleSidebar()"></div>
+  
+  <!-- Admin Sidebar -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar-header">
+      <a href="/" class="flex items-center gap-3">
+        <img src="https://via.placeholder.com/48x48/1a5f2a/ffffff?text=DH" alt="Logo" class="w-10 h-10 rounded-lg">
+        <div>
+          <h2 class="font-bold text-lg leading-tight">OSIS Admin</h2>
+          <p class="text-xs text-gray-500">MTs Darul Hikam</p>
+        </div>
+      </a>
+    </div>
+    
+    <!-- User Info -->
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-3">
+        <img src="https://via.placeholder.com/40x40/1a5f2a/ffffff?text=A" alt="Admin" class="admin-user-avatar w-10 h-10 rounded-full">
+        <div>
+          <p class="admin-user-name font-medium text-sm">Admin</p>
+          <p class="admin-user-email text-xs text-gray-500">admin@osis.mts.sch.id</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="admin-sidebar-nav">
+      <a href="dashboard.html" class="admin-nav-item active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        Dashboard
+      </a>
+      <a href="#" class="admin-nav-item" onclick="showComingSoon(event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Pengurus
+      </a>
+      <a href="#" class="admin-nav-item" onclick="showComingSoon(event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        Program
+      </a>
+      <a href="#" class="admin-nav-item" onclick="showComingSoon(event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Event
+      </a>
+      <a href="#" class="admin-nav-item" onclick="showComingSoon(event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        Galeri
+      </a>
+      <a href="#" class="admin-nav-item" onclick="showComingSoon(event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download
+      </a>
+      <a href="#" class="admin-nav-item" onclick="showComingSoon(event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+          <polyline points="22,6 12,13 2,6"></polyline>
+        </svg>
+        Pesan
+      </a>
+      <a href="#" class="admin-nav-item" onclick="showComingSoon(event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        Pengaturan
+      </a>
+      
+      <div class="border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
+        <a href="/" class="admin-nav-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          Lihat Website
+        </a>
+        <button class="admin-nav-item w-full text-left logout-btn" onclick="logout()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Logout
+        </button>
+      </div>
+    </nav>
+  </aside>
+  
+  <!-- Admin Main Content -->
+  <main class="admin-main" id="admin-main">
+    <!-- Header -->
+    <header class="admin-header flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <button class="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" onclick="toggleSidebar()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <h1 class="text-xl font-semibold">Dashboard</h1>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        
+        <!-- Notification -->
+        <button class="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" onclick="showComingSoon(event)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+      </div>
+    </header>
+    
+    <!-- Content -->
+    <div class="p-6">
+      <!-- Welcome Banner -->
+      <div class="bg-gradient-to-r from-primary to-primary-light rounded-2xl p-6 mb-8 text-white">
+        <h2 class="text-2xl font-bold mb-2">Selamat Datang, Admin! 👋</h2>
+        <p class="text-white/80">
+          Ini adalah dashboard admin OSIS MTs Darul Hikam Cirebon. 
+          Kelola konten website dari sini.
+        </p>
+      </div>
+      
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Stat Card 1 -->
+        <div class="stat-card scroll-animate">
+          <div class="flex items-center justify-between mb-4">
+            <div class="stat-icon bg-primary/10 text-primary">
+              👥
+            </div>
+            <span class="text-sm text-gray-500">Total</span>
+          </div>
+          <h3 class="text-2xl font-bold mb-1">0</h3>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">Pengurus OSIS</p>
+        </div>
+        
+        <!-- Stat Card 2 -->
+        <div class="stat-card scroll-animate">
+          <div class="flex items-center justify-between mb-4">
+            <div class="stat-icon bg-secondary/10 text-secondary">
+              📋
+            </div>
+            <span class="text-sm text-gray-500">Total</span>
+          </div>
+          <h3 class="text-2xl font-bold mb-1">0</h3>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">Program Kerja</p>
+        </div>
+        
+        <!-- Stat Card 3 -->
+        <div class="stat-card scroll-animate">
+          <div class="flex items-center justify-between mb-4">
+            <div class="stat-icon bg-blue-500/10 text-blue-500">
+              📅
+            </div>
+            <span class="text-sm text-gray-500">Total</span>
+          </div>
+          <h3 class="text-2xl font-bold mb-1">0</h3>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">Event</p>
+        </div>
+        
+        <!-- Stat Card 4 -->
+        <div class="stat-card scroll-animate">
+          <div class="flex items-center justify-between mb-4">
+            <div class="stat-icon bg-green-500/10 text-green-500">
+              🖼️
+            </div>
+            <span class="text-sm text-gray-500">Total</span>
+          </div>
+          <h3 class="text-2xl font-bold mb-1">0</h3>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">Foto Galeri</p>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4">Aksi Cepat</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button class="card p-4 text-center hover:shadow-lg transition-shadow" onclick="showComingSoon(event)">
+            <div class="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-xl flex items-center justify-center text-2xl">
+              ➕
+            </div>
+            <p class="font-medium text-sm">Tambah Pengurus</p>
+          </button>
+          <button class="card p-4 text-center hover:shadow-lg transition-shadow" onclick="showComingSoon(event)">
+            <div class="w-12 h-12 mx-auto mb-3 bg-secondary/10 rounded-xl flex items-center justify-center text-2xl">
+              ➕
+            </div>
+            <p class="font-medium text-sm">Tambah Program</p>
+          </button>
+          <button class="card p-4 text-center hover:shadow-lg transition-shadow" onclick="showComingSoon(event)">
+            <div class="w-12 h-12 mx-auto mb-3 bg-blue-500/10 rounded-xl flex items-center justify-center text-2xl">
+              ➕
+            </div>
+            <p class="font-medium text-sm">Tambah Event</p>
+          </button>
+          <button class="card p-4 text-center hover:shadow-lg transition-shadow" onclick="showComingSoon(event)">
+            <div class="w-12 h-12 mx-auto mb-3 bg-green-500/10 rounded-xl flex items-center justify-center text-2xl">
+              ⬆️
+            </div>
+            <p class="font-medium text-sm">Upload Foto</p>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Recent Activity -->
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Recent Items -->
+        <div class="card">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Data Terbaru</h3>
+              <button class="text-sm text-primary hover:underline" onclick="showComingSoon(event)">Lihat Semua</button>
+            </div>
+            
+            <div class="text-center py-8">
+              <div class="text-5xl mb-4">📭</div>
+              <p class="text-gray-500 dark:text-gray-400 mb-2">Belum ada data</p>
+              <p class="text-sm text-gray-400 dark:text-gray-500">
+                Data akan muncul di sini setelah ditambahkan
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Messages -->
+        <div class="card">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Pesan Masuk</h3>
+              <button class="text-sm text-primary hover:underline" onclick="showComingSoon(event)">Lihat Semua</button>
+            </div>
+            
+            <div class="text-center py-8">
+              <div class="text-5xl mb-4">📭</div>
+              <p class="text-gray-500 dark:text-gray-400 mb-2">Belum ada pesan</p>
+              <p class="text-sm text-gray-400 dark:text-gray-500">
+                Pesan dari pengunjung akan muncul di sini
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Info Banner -->
+      <div class="mt-8 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+        <div class="flex items-start gap-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-500 flex-shrink-0 mt-0.5">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <div>
+            <h4 class="font-medium text-amber-800 dark:text-amber-200 mb-1">Informasi</h4>
+            <p class="text-sm text-amber-700 dark:text-amber-300">
+              Dashboard admin sedang dalam tahap pengembangan. Fitur-fitur akan segera tersedia. 
+              Terima kasih atas kesabaran Anda.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <!-- Scripts -->
+  <script src="../js/main.js"></script>
+  <script src="../js/firebase-auth.js"></script>
+  
+  <script>
+    // Sidebar Toggle
+    function toggleSidebar() {
+      const sidebar = document.getElementById('admin-sidebar');
+      const overlay = document.getElementById('mobile-overlay');
+      
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('active');
+    }
+    
+    // Logout
+    function logout() {
+      if (confirm('Apakah Anda yakin ingin logout?')) {
+        // Clear session
+        sessionStorage.removeItem('osis_admin_user');
+        // Redirect to home
+        window.location.href = '/';
+      }
+    }
+    
+    // Show Coming Soon
+    function showComingSoon(e) {
+      e.preventDefault();
+      if (window.ComingSoonPopup) {
+        window.ComingSoonPopup.showPopup();
+      } else {
+        alert('Fitur ini akan segera hadir!');
+      }
+    }
+    
+    // Check authentication
+    document.addEventListener('DOMContentLoaded', function() {
+      const user = sessionStorage.getItem('osis_admin_user');
+      
+      // For demo purposes, allow access without login
+      // In production, uncomment the following:
+      /*
+      if (!user) {
+        window.location.href = '/?login=required';
+        return;
+      }
+      */
+    });
+  </script>
+</body>
+</html>
